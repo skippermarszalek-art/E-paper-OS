@@ -1,0 +1,21 @@
+name: Build firmware
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install platformio esptool
+      - run: pio run
+      - name: Polacz w jeden plik .bin (flash od adresu 0x0)
+        run: |
+          B=.pio/build/waveshare_s3_lcd2
+          esptool.py --chip esp32s3 merge_bin -o epaperos-full.bin \
+            --flash_mode dio --flash_size 16MB \
+            0x0 $B/bootloader.bin 0x8000 $B/partitions.bin 0x10000 $B/firmware.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: epaperos-bin
+          path: epaperos-full.bin
